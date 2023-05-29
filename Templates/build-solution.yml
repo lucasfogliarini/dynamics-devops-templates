@@ -1,0 +1,83 @@
+parameters:
+- name: SolutionName
+  type: string
+- name: Repo
+  type: string
+
+steps:
+- powershell: |
+    # load PowerShell files into memory
+    try {
+        $pipelineUtilsPath = "$(Agent.BuildDirectory)/PipelineUtils"
+        $powerShellPath = "$pipelineUtilsPath/Scripts"
+        Write-Host "##vso[task.setvariable variable=PowerShellPath]$powerShellPath"
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while set powershell path on agent."
+        Write-Host $_
+        exit 1;
+    }
+  displayName: 'Set PowerShell Path'
+
+- powershell: |
+    # load PowerShell files into memory
+    . "$env:POWERSHELLPATH/change-solution-type.ps1"
+    try {
+        Change-SolutionType "${{parameters.SolutionName}}" "${{parameters.Repo}}" "1"
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while changing solution type to managed."
+        Write-Host $_
+        exit 1;
+    }
+  displayName: 'Change solution type to managed'
+
+- powershell: |
+    # load PowerShell files into memory
+    . "$env:POWERSHELLPATH/rename-forms.ps1"
+    try {
+        RenameFormsToManaged "${{parameters.SolutionName}}" "${{parameters.Repo}}"
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while append managed in forms name."
+        Write-Host $_
+        exit 1;
+    }
+  displayName: 'Change forms name'
+
+- powershell: |
+    # load PowerShell files into memory
+    . "$env:POWERSHELLPATH/remove-businesshour-from-sla.ps1"
+    try {
+        Remove-BusinessHours "${{parameters.SolutionName}}" "${{parameters.Repo}}"
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while removing businesshours from sla items managed in forms name."
+        Write-Host $_
+        exit 1;
+    }
+  displayName: 'Remove Businesshours from SLA Items'
+
+- powershell: |
+    # load PowerShell files into memory
+    . "$env:POWERSHELLPATH/delete-missing-dependencies.ps1"
+    try {
+        Remove-MissingDependeciesNode "${{parameters.SolutionName}}" "${{parameters.Repo}}"
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while deleting missing dependencies node."
+        Write-Host $_
+        exit 1;
+    }
+  displayName: 'Delete Missing Depencies Node'
+
+- task: PowerPlatformToolInstaller@2
+  inputs:
+    DefaultVersion: true
+
+- task: PowerPlatformPackSolution@2
+  inputs:
+    SolutionSourceFolder: '$(Build.SourcesDirectory)/${{parameters.Repo}}/${{parameters.SolutionName}}'
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/${{parameters.SolutionName}}_managed.zip'
+    SolutionType: 'Managed'
+
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish Artifacts'
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)/${{parameters.SolutionName}}_managed.zip'
+    artifact: drop

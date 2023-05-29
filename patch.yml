@@ -1,0 +1,134 @@
+
+parameters:
+ - name: 'SolutionName'
+   type: string
+ - name: 'Repo'
+   type: string
+
+steps:
+- task: PowerPlatformToolInstaller@2
+  inputs:
+    DefaultVersion: true
+
+# Use set-connection-variables task to get values from AzDO Service Connection to be used in scripts that don't use tasks
+- task: PowerPlatformSetConnectionVariables@2
+  displayName: 'Set Connection Variables'
+  name: connectionVariables
+  inputs:
+    authenticationType: 'PowerPlatformSPN'
+    PowerPlatformSPN: 'kroton-dev-core'
+    Environment: 'https://kroton-dev-core.crm2.dynamics.com'
+
+- template: Templates/set-spn-token.yml
+  parameters:
+    dynamicsUrl: 'https://kroton-dev-core.crm2.dynamics.com'
+    tenantId: $(connectionVariables.BuildTools.TenantId)
+    clientId: $(connectionVariables.BuildTools.ApplicationId)
+    clientSecret: $(connectionVariables.BuildTools.ClientSecret)
+
+# Check Solution Name
+# - powershell: |
+#     # load PowerShell files into memory
+#     . "$env:POWERSHELLPATH/check-solution-name.ps1"
+#     try {
+#         Test-SolutionName "$env:MAPPED_SPN_Token" "krotondev.crm2.dynamics.com" "${{parameters.SolutionName}}" "^(Athenas_PCF|Athenas_Configuration|Athenas_ClientExtensions|Athenas_Security|Athenas_VirtualTable|Athenas_DataModel|Athenas_Processos|Athenas_Plugins|Athenas_SLA|Athenas_App)_\d+$"
+#     } catch {
+#         Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution name."
+#         Write-Host $_
+#         exit 1;
+#     }
+#   displayName: 'Test Solution Name Pattern'
+#   env:
+#    MAPPED_SPN_Token: $(SpnToken)
+
+# Check Solution Publisher
+# - powershell: |
+#     # load PowerShell files into memory
+#     . "$env:POWERSHELLPATH/check-publisher-name.ps1"
+#     try {
+#         Test-PublisherPrefix "$env:MAPPED_SPN_Token" "krotondev.crm2.dynamics.com" "${{parameters.SolutionName}}" "kcs"
+#     } catch {
+#         Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution publisher."
+#         Write-Host $_
+#         exit 1;
+#     }
+#   displayName: 'Test Solution Publisher'
+#   env:
+#    MAPPED_SPN_Token: $(SpnToken)
+
+# Check Connection Reference
+# - powershell: |
+#     # load PowerShell files into memory
+#     . "$env:POWERSHELLPATH/check-connection-references.ps1"
+#     try {
+#         Test-ConnectionReferences "$env:MAPPED_SPN_Token" "krotondev.crm2.dynamics.com" "${{parameters.SolutionName}}"
+#     } catch {
+#         Write-Host "##vso[task.logissue type=warning]Error occurred while checking connection references."
+#         Write-Host $_
+#         exit 1;
+#     }
+#   displayName: 'Test Connection References'
+#   env:
+#    MAPPED_SPN_Token: $(SpnToken)
+
+# Check Solution Components
+# - powershell: |
+#     # load PowerShell files into memory
+#     . "$env:POWERSHELLPATH/check-allowed-solution-components.ps1"
+#     try {
+#         Test-AllowedSolutionComponents "${{parameters.SolutionName}}"
+#     } catch {
+#         Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution components."
+#         Write-Host $_
+#         exit 1;
+#     }
+#   displayName: 'Check Solution Components'
+#   env:
+#    MAPPED_SPN_Token: $(SpnToken)
+
+- script: |
+   git config user.email "$(Build.RequestedForEmail)"
+   git config user.name "$(Build.RequestedFor)"
+   git checkout --orphan patch/${{parameters.SolutionName}}
+   git rm -r . --cached
+  workingDirectory: $(Build.SourcesDirectory)\${{parameters.Repo}}
+  displayName: 'Create a new branch'
+
+- task: microsoft-IsvExpTools.PowerPlatform-BuildTools.publish-customizations.PowerPlatformPublishCustomizations@2
+  displayName: 'Power Platform Publish Customizations '
+  inputs:
+    authenticationType: PowerPlatformSPN
+    PowerPlatformSPN: 'kroton-dev-core'
+    Environment: 'https://kroton-dev-core.crm2.dynamics.com'
+
+- task: microsoft-IsvExpTools.PowerPlatform-BuildTools.export-solution.PowerPlatformExportSolution@2
+  displayName: 'Power Platform Export Solution '
+  inputs:
+    authenticationType: PowerPlatformSPN
+    PowerPlatformSPN: 'kroton-dev-core'
+    Environment: 'https://kroton-dev-core.crm2.dynamics.com'
+    SolutionName: "${{parameters.SolutionName}}"
+    SolutionOutputFile: '$(Build.Repository.LocalPath)\${{parameters.SolutionName}}\${{parameters.SolutionName}}.zip'
+    Managed: true
+
+- task: PowerPlatformUnpackSolution@2
+  inputs:
+    SolutionInputFile: '$(Build.Repository.LocalPath)\${{parameters.SolutionName}}\${{parameters.SolutionName}}.zip'
+    SolutionTargetFolder: '$(Build.SourcesDirectory)\${{parameters.Repo}}\${{parameters.SolutionName}}'
+    SolutionType: 'Managed'
+
+- script: |
+   git add .\${{parameters.SolutionName}}
+   git commit -m "Build requested by $(Build.RequestedFor)"
+   git push --set-upstream origin patch/${{parameters.SolutionName}}
+  workingDirectory: $(Build.SourcesDirectory)\${{parameters.Repo}}
+  displayName: 'Commit changes'
+
+- task: PowerPlatformPackSolution@2
+  inputs:
+    SolutionSourceFolder: '$(Build.SourcesDirectory)/${{parameters.Repo}}/${{parameters.SolutionName}}'
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/patch.zip'
+    SolutionType: 'Managed'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: drop'

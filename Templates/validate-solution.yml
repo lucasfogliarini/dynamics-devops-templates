@@ -1,0 +1,28 @@
+parameters:
+- name: SolutionName
+  type: string
+- name: Repo
+  type: string
+
+steps:
+
+- task: PowerPlatformToolInstaller@2
+  inputs:
+    DefaultVersion: true
+
+- task: PowerPlatformPackSolution@2
+  inputs:
+    SolutionSourceFolder: '$(Build.SourcesDirectory)\${{parameters.Repo}}\${{parameters.SolutionName}}'
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)\${{parameters.SolutionName}}_unmanaged.zip'
+    SolutionType: 'Unmanaged'
+
+# Run Solution Checker against our solution. This is currently only triggered for pipelines that trigger for Pull Requests
+- task: microsoft-IsvExpTools.PowerPlatform-BuildTools.checker.PowerPlatformChecker@2
+  displayName: 'Run Solution Checker'
+  inputs:
+    authenticationType: PowerPlatformSPN
+    PowerPlatformSPN: 'kroton-dev-core'
+    FilesToAnalyze: '$(Build.ArtifactStagingDirectory)\${{parameters.SolutionName}}_unmanaged.zip'
+    RuleSet: '0ad12346-e108-40b8-a956-9a8f95ea18c9'
+    RulesToOverride: '[{"Id":"web-use-strict-mode","OverrideLevel":"Informational"},{"Id":"web-use-strict-equality-operators","OverrideLevel":"Informational"},{"Id":"web-remove-console","OverrideLevel":"Informational"},{"Id":"web-remove-debug-script","OverrideLevel":"Informational"},{"Id":"web-use-navigation-api","OverrideLevel":"Informational"},{"Id":"web-use-client-context","OverrideLevel":"Informational"},{"Id":"web-use-global-context","OverrideLevel":"Informational"},{"Id":"web-remove-alert","OverrideLevel":"Informational"},{"Id":"web-use-relative-uri","OverrideLevel":"Informational"},{"Id":"web-use-async","OverrideLevel":"Informational"},{"Id":"web-avoid-browser-specific-api","OverrideLevel":"Informational"},{"Id":"web-avoid-crm2011-service-odata","OverrideLevel":"Informational"},{"Id":"web-avoid-eval","OverrideLevel":"Informational"},{"Id":"web-avoid-crm2011-service-soap","OverrideLevel":"Informational"},{"Id":"web-avoid-window-top","OverrideLevel":"Informational"}]'
+    condition: and(succeeded(), and(ne(variables['DisableSolutionChecker'], 'true'), eq(variables['Build.Reason'], 'PullRequest')))
