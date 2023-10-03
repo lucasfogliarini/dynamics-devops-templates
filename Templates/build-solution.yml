@@ -3,6 +3,9 @@ parameters:
   type: string
 - name: Repo
   type: string
+- name: ChangeSolutionType
+  type: boolean
+  default: true
 
 steps:
 - powershell: |
@@ -28,7 +31,8 @@ steps:
         Write-Host $_
         exit 1;
     }
-  displayName: 'Change solution type to managed'
+  displayName: 'Change Solution Type'
+  condition: and(succeeded(), ${{parameters.ChangeSolutionType}})
 
 - powershell: |
     # load PowerShell files into memory
@@ -40,19 +44,8 @@ steps:
         Write-Host $_
         exit 1;
     }
-  displayName: 'Change forms name'
-
-- powershell: |
-    # load PowerShell files into memory
-    . "$env:POWERSHELLPATH/remove-businesshour-from-sla.ps1"
-    try {
-        Remove-BusinessHours "${{parameters.SolutionName}}" "${{parameters.Repo}}"
-    } catch {
-        Write-Host "##vso[task.logissue type=warning]Error occurred while removing businesshours from sla items managed in forms name."
-        Write-Host $_
-        exit 1;
-    }
-  displayName: 'Remove Businesshours from SLA Items'
+  displayName: 'Change Forms Name'
+  condition: and(succeeded(), ${{parameters.ChangeSolutionType}})
 
 - powershell: |
     # load PowerShell files into memory
@@ -75,9 +68,23 @@ steps:
     SolutionSourceFolder: '$(Build.SourcesDirectory)/${{parameters.Repo}}/${{parameters.SolutionName}}'
     SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/${{parameters.SolutionName}}_managed.zip'
     SolutionType: 'Managed'
+  condition: and(succeeded(), ${{parameters.ChangeSolutionType}})
+
+- task: PowerPlatformPackSolution@2
+  inputs:
+    SolutionSourceFolder: '$(Build.SourcesDirectory)/${{parameters.Repo}}/${{parameters.SolutionName}}'
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/${{parameters.SolutionName}}_managed.zip'
+    SolutionType: 'Unmanaged'
+  condition: and(succeeded(), ne(${{parameters.ChangeSolutionType}}, true))
+
+- task: CopyFiles@2
+  displayName: 'Copy settings files'
+  inputs:
+    Contents: '$(Build.SourcesDirectory)/${{parameters.Repo}}/Settings/*.json'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
 - task: PublishPipelineArtifact@1
   displayName: 'Publish Artifacts'
   inputs:
-    targetPath: '$(Build.ArtifactStagingDirectory)/${{parameters.SolutionName}}_managed.zip'
+    targetPath: '$(Build.ArtifactStagingDirectory)'
     artifact: drop

@@ -1,0 +1,57 @@
+parameters:
+- name: sonarCloud
+  displayName: Sonar Cloud
+  type: string
+- name: organization
+  displayName: Organization
+  type: string
+  default: 'cogna-educacao'
+- name: scannerMode
+  displayName: Scanner Mode
+  type: string
+  default: 'MSBuild'
+- name: buildBreakerEnabled
+  type: boolean
+  default: true
+
+steps:
+- task: SonarCloudPrepare@1
+  #enabled: false
+  displayName: 'Prepare analysis on SonarCloud'
+  inputs:
+    SonarCloud: ${{ parameters.sonarCloud }}
+    organization: ${{ parameters.organization }}
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliprojectKey: 'kdop_$(Build.Repository.Name)'
+    cliprojectName: '$(Build.Repository.Name)'
+    cliSources: '.'
+    extraProperties: |
+      sonar.qualitygate.wait=$(sonar.qg)]
+      sonar.qualitygate='Athenas'
+  condition: eq(variables['sonar.run'], true)
+  
+
+- task: DotNetCoreCLI@2
+  #enabled: false
+  displayName: "Project Build"
+  inputs:
+    command: 'build'
+    projects: '**/*.sln'
+    arguments: '--configuration $(BuildConfiguration)'
+
+- task: SonarCloudAnalyze@1
+  #enabled: false
+  displayName: 'Run Code Analysis'
+
+- task: SonarCloudPublish@1
+  #enabled: false
+  displayName: 'Publish Quality Gate Result'
+
+- task: sonarcloud-buildbreaker@2
+  #enabled: false
+  displayName: 'Break build on quality gate failure'
+  inputs:
+    SonarCloud: ${{ parameters.sonarCloud }}
+    organization: ${{ parameters.organization }}
+  condition: and(succeeded(), ${{parameters.buildBreakerEnabled}})

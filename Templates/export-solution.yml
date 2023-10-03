@@ -1,12 +1,38 @@
 parameters:
-- name: SolutionName
-  type: string
+# Tasks flags
 - name: MergeSolutionBeforeExport
   type: boolean
   default: true
+- name: CheckSolutionComponentTypes
+  type: boolean
+  default: false
 - name: AllowedSolutionComponentTypes
   type: string
-- name: Repo
+- name: CheckSolutionNamePattern
+  type: boolean
+  default: false
+- name: CheckTableBehavior
+  type: boolean
+  default: false
+- name: CheckEnvironmentVariables
+  type: boolean
+  default: false
+- name: CheckConnectionReferences
+  type: boolean
+  default: false
+  
+  # Settings
+- name: SolutionName
+  type: string
+- name: DevServiceConnectionName
+  type: string
+- name: DevServiceConnectionURL
+  type: string
+- name: ApprovedSolutionNames
+  type: string
+- name: ConnectionReferenceDisplayNamePattern
+  type: string
+- name: ConnectionReferenceLogicalNamePattern
   type: string
 - name: Branch
   type: string
@@ -17,7 +43,7 @@ steps:
    git config user.email "$(Build.RequestedForEmail)"
    git config user.name "$(Build.RequestedFor)"
    git checkout origin/${{parameters.Branch}} --track
-  workingDirectory: $(Build.SourcesDirectory)\${{parameters.Repo}}
+  workingDirectory: $(Build.SourcesDirectory)\$(Build.Repository.Name)
   displayName: 'Initialize Git'
 
 - task: PowerPlatformToolInstaller@2
@@ -30,12 +56,12 @@ steps:
   name: connectionVariables
   inputs:
     authenticationType: 'PowerPlatformSPN'
-    PowerPlatformSPN: 'kroton-dev-core'
-    Environment: 'https://kroton-dev-core.crm2.dynamics.com'
+    PowerPlatformSPN: ${{parameters.DevServiceConnectionName}}
+    Environment: ${{parameters.DevServiceConnectionURL}}
 
 - template: set-spn-token.yml
   parameters:
-    dynamicsUrl: 'https://kroton-dev-core.crm2.dynamics.com'
+    dynamicsUrl: ${{parameters.DevServiceConnectionURL}}
     tenantId: $(connectionVariables.BuildTools.TenantId)
     clientId: $(connectionVariables.BuildTools.ApplicationId)
     clientSecret: $(connectionVariables.BuildTools.ClientSecret)
@@ -45,7 +71,7 @@ steps:
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/merge-solution.ps1"
     try {
-        Merge-Solution "$env:MAPPED_SPN_Token" "kroton-dev-core.crm2.dynamics.com" "${{parameters.SolutionName}}"
+        Merge-Solution "$env:MAPPED_SPN_Token" "${{parameters.DevServiceConnectionURL}}" "${{parameters.SolutionName}}"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while merging solution."
         Write-Host $_
@@ -61,13 +87,14 @@ steps:
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/check-solution-name.ps1"
     try {
-        Test-SolutionName "$env:MAPPED_SPN_Token" "kroton-dev-core.crm2.dynamics.com" "${{parameters.SolutionName}}" "^(Contact Core|Incident Core)"
+        Test-SolutionName "$env:MAPPED_SPN_Token" "${{parameters.DevServiceConnectionURL}}" "${{parameters.SolutionName}}" "${{parameters.ApprovedSolutionNames}}"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution name."
         Write-Host $_
         exit 1;
     }
-  displayName: 'Test Solution Name Pattern'
+  displayName: 'Check Solution Name Pattern'
+  condition: and(succeeded(), ${{parameters.CheckSolutionNamePattern}})
   env:
    MAPPED_SPN_Token: $(SpnToken)
 
@@ -76,13 +103,13 @@ steps:
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/check-publisher-name.ps1"
     try {
-        Test-PublisherPrefix "$env:MAPPED_SPN_Token" "kroton-dev-core.crm2.dynamics.com" "${{parameters.SolutionName}}" "kcs"
+        Test-PublisherPrefix "$env:MAPPED_SPN_Token" "${{parameters.DevServiceConnectionURL}}" "${{parameters.SolutionName}}" "kcs"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution publisher."
         Write-Host $_
         exit 1;
     }
-  displayName: 'Test Solution Publisher'
+  displayName: 'Check Solution Publisher'
   env:
    MAPPED_SPN_Token: $(SpnToken)
 
@@ -91,42 +118,60 @@ steps:
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/check-connection-references.ps1"
     try {
-        Test-ConnectionReferences "$env:MAPPED_SPN_Token" "kroton-dev-core.crm2.dynamics.com" "${{parameters.SolutionName}}"
+        Test-ConnectionReferences "$env:MAPPED_SPN_Token" "${{parameters.DevServiceConnectionURL}}" "${{parameters.SolutionName}}" "${{parameters.ConnectionReferenceDisplayNamePattern}}" "${{parameters.ConnectionReferenceLogicalNamePattern}}"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while checking connection references."
         Write-Host $_
         exit 1;
     }
   displayName: 'Check Connection References'
+  condition: and(succeeded(), ${{parameters.CheckConnectionReferences}})
   env:
    MAPPED_SPN_Token: $(SpnToken)
 
 # Check Solution Components
-#- powershell: |
-#    # load PowerShell files into memory
-#    . "$env:POWERSHELLPATH/check-allowed-solution-components.ps1"
-#    try {
-#        Test-AllowedSolutionComponents "$env:MAPPED_SPN_Token" "krotondev.crm2.dynamics.com" "${{parameters.SolutionName}}" "${{parameters.AllowedSolutionComponentTypes}}"
-#    } catch {
-#        Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution components."
-#        Write-Host $_
-#        exit 1;
-#    }
-#  displayName: 'Check Allowed Solution Components'
-#  env:
-#   MAPPED_SPN_Token: $(SpnToken)
+- powershell: |
+    # load PowerShell files into memory
+    . "$env:POWERSHELLPATH/check-allowed-solution-components.ps1"
+    try {
+        Test-AllowedSolutionComponents "$env:MAPPED_SPN_Token" "${{parameters.DevServiceConnectionURL}}" "${{parameters.SolutionName}}" "${{parameters.AllowedSolutionComponentTypes}}"
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution components."
+        Write-Host $_
+        exit 1;
+    }
+  displayName: 'Check Solution Components'
+  condition: and(succeeded(), ${{parameters.CheckSolutionComponentTypes}})
+  env:
+   MAPPED_SPN_Token: $(SpnToken)
+
+# Check Table Behavior
+- powershell: |
+    # load PowerShell files into memory
+    . "$env:POWERSHELLPATH/check-table-behavior.ps1"
+    try {
+        Test-TableBehavior "${{parameters.DevServiceConnectionURL}}" "$env:MAPPED_SPN_Token" "${{parameters.SolutionName}}"
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while checking table behavior."
+        Write-Host $_
+        exit 1;
+    }
+  displayName: 'Check Table Behavior'
+  condition: and(succeeded(), ${{parameters.CheckTableBehavior}})
+  env:
+   MAPPED_SPN_Token: $(SpnToken)
 
 - task: PowerPlatformPublishCustomizations@2
   inputs:
     authenticationType: 'PowerPlatformSPN'
-    PowerPlatformSPN: 'kroton-dev-core'
+    PowerPlatformSPN: ${{parameters.DevServiceConnectionName}}
     AsyncOperation: true
     MaxAsyncWaitTime: '120'
 
 - task: PowerPlatformExportSolution@2
   inputs:
     authenticationType: 'PowerPlatformSPN'
-    PowerPlatformSPN: 'kroton-dev-core'
+    PowerPlatformSPN: ${{parameters.DevServiceConnectionName}}
     SolutionName: '${{parameters.SolutionName}}'
     SolutionOutputFile: '$(Build.Repository.LocalPath)\${{parameters.SolutionName}}\${{parameters.SolutionName}}_unmanaged.zip'
     AsyncOperation: true
@@ -135,31 +180,33 @@ steps:
 - task: PowerPlatformUnpackSolution@2
   inputs:
     SolutionInputFile: '$(Build.Repository.LocalPath)\${{parameters.SolutionName}}\${{parameters.SolutionName}}_unmanaged.zip'
-    SolutionTargetFolder: '$(Build.SourcesDirectory)\${{parameters.Repo}}\${{parameters.SolutionName}}'
+    SolutionTargetFolder: '$(Build.SourcesDirectory)\$(Build.Repository.Name)\${{parameters.SolutionName}}'
 
 - powershell: |
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/environment-variables.ps1"
     try {
-        Check-NewEnvironmentVariables "${{parameters.SolutionName}}" "${{parameters.Repo}}"
+        Check-NewEnvironmentVariables "${{parameters.SolutionName}}" "$(Build.Repository.Name)"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while processing new environment variables."
         Write-Host $_
         exit 1;
     }
-  displayName: 'Check new Environment Variables'
+  displayName: 'Check Environment Variables'
+  condition: and(succeeded(), ${{parameters.CheckEnvironmentVariables}})
 
 - powershell: |
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/environment-variables.ps1"
     try {
-        Remove-EnvironmentVariablesValues "${{parameters.SolutionName}}" "${{parameters.Repo}}"
+        Remove-EnvironmentVariablesValues "${{parameters.SolutionName}}" "$(Build.Repository.Name)"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while deleting environment variables values."
         Write-Host $_
         exit 1;
     }
   displayName: 'Remove Environment Variable values'
+  condition: and(succeeded(), ${{parameters.CheckEnvironmentVariables}})
 
 - script: |
    git config user.email "$(Build.RequestedForEmail)"
@@ -167,20 +214,21 @@ steps:
    git add --all
    git commit -m "Build requested by $(Build.RequestedFor)"
    git -c http.extraheader="AUTHORIZATION: bearer $(System.AccessToken)" push
-  workingDirectory: $(Build.SourcesDirectory)\${{parameters.Repo}}
+  workingDirectory: $(Build.SourcesDirectory)\$(Build.Repository.Name)
   displayName: 'Commit changes'
 
-# Create PR for QA branch.
-- powershell: |
-    # load PowerShell files into memory
-    . "$env:POWERSHELLPATH/create-pull-request.ps1"
-    try {
-        Add-PullRequest "Dynamics%20Core" "${{parameters.Repo}}" "refs/heads/${{parameters.Branch}}" "refs/heads/qa" "$(System.AccessToken)"
-    } catch {
-        Write-Host "##vso[task.logissue type=warning]Error occurred while creating a pull request."
-        Write-Host $_
-        exit 1;
-    }
-  displayName: 'Create a new PR for QA branch.'
+ # add Azure DevOps extension
+- script: az extension add -n azure-devops
+  displayName: 'Install Azure DevOps Extension'
+
+  # Set default org and project
+- powershell: az devops configure --defaults organization=$(System.CollectionUri) project="$(System.TeamProject)"
   env:
-   MAPPED_SPN_Token: $(SpnToken)
+      AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+  displayName: 'Set az devops defaults'
+
+  # Create Pull Requests
+- powershell: az repos pr create --repository "$(Build.Repository.Name)" --source-branch 'refs/heads/dev' --delete-source-branch $false --auto-complete $false --target-branch 'refs/heads/qa' --reviewers="$(Build.RequestedForEmail)" --title "Build requested for $(Build.RequestedFor)"
+  env:
+    AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+  displayName: 'Create PR - dev to qa'

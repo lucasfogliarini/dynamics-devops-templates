@@ -56,9 +56,10 @@ function Set-DefaultHeaders {
 
 function Set-RequestUrl {
     param (
-        [Parameter(Mandatory)] [String]$dataverseHost,
+        [Parameter(Mandatory)] [String]$dynamicsURL,
         [Parameter(Mandatory)] [String]$requestUrlRemainder
     )
+    $dataverseHost = Get-HostFromUrl $dynamicsURL
     $requestUrl = "https://$dataverseHost/api/data/v9.2/$requestUrlRemainder"
     return $requestUrl    
 }
@@ -66,11 +67,11 @@ function Set-RequestUrl {
 function Invoke-DataverseHttpGet {
     param (
         [Parameter(Mandatory)] [String]$token,
-        [Parameter(Mandatory)] [String]$dataverseHost,
+        [Parameter(Mandatory)] [String]$dynamicsURL,
         [Parameter(Mandatory)] [String]$requestUrlRemainder
     )
     $headers = Set-DefaultHeaders $token
-    $requestUrl = Set-RequestUrl $dataverseHost $requestUrlRemainder
+    $requestUrl = Set-RequestUrl $dynamicsURL $requestUrlRemainder
     $response = Invoke-RestMethod $requestUrl -Method 'GET' -Headers $headers
     return $response
 }
@@ -78,12 +79,12 @@ function Invoke-DataverseHttpGet {
 function Invoke-DataverseHttpPost {
     param (
         [Parameter(Mandatory)] [String]$token,
-        [Parameter(Mandatory)] [String]$dataverseHost,
+        [Parameter(Mandatory)] [String]$dynamicsURL,
         [Parameter(Mandatory)] [String]$requestUrlRemainder,
         [Parameter(Mandatory)] [String]$body
     )
     $headers = Set-DefaultHeaders $token
-    $requestUrl = Set-RequestUrl $dataverseHost $requestUrlRemainder
+    $requestUrl = Set-RequestUrl $dynamicsURL $requestUrlRemainder
     $response = Invoke-RestMethod $requestUrl -Method 'POST' -Headers $headers -Body $body
     return $response
 }

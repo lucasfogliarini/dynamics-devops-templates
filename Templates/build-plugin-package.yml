@@ -1,0 +1,89 @@
+parameters:
+- name: DevServiceConnectionName
+  type: string
+- name: DevServiceConnectionURL
+  type: string
+- name: PluginPackages
+  type: object
+  default: []
+
+steps:
+
+- task: NuGetToolInstaller@1
+  inputs:
+    versionSpec: 
+    checkLatest: true
+
+- task: NuGetCommand@2
+  inputs:
+    command: 'restore'
+    restoreSolution: '**/*.sln'
+    feedsToUse: 'select'
+
+- task: VSBuild@1
+  inputs:
+    solution: '**\*.sln'
+    clean: true
+
+- task: VSTest@2
+  inputs:
+    testSelector: 'testAssemblies'
+    testAssemblyVer2: |
+      **\bin\**\*test.dll
+      **\bin\**\*tests.dll
+    searchFolder: '$(System.DefaultWorkingDirectory)'
+    codeCoverageEnabled: true
+
+- task: CopyFiles@2
+  inputs:
+    sourceFolder: '$(Build.Repository.Name)/src/Plugins'
+    contents: '**\bin\**\*.nupkg'
+    flattenFolders: true
+    targetFolder: $(Build.ArtifactStagingDirectory)/Plugins
+  displayName: 'Copy Plugin Packages'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)'
+    artifactName: DataversePlugins
+  displayName: 'Publish Dataverse Plugins artifact'
+
+- task: NuGetCommand@2
+  displayName: 'Install PAC'
+  inputs:
+    command: 'custom'
+    arguments: 'install Microsoft.PowerApps.CLI -OutputDirectory pac'
+
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      $pacNugetFolder = Get-ChildItem "pac" | Where-Object {$_.Name -match "Microsoft.PowerApps.CLI."}
+      $pacPath = $pacNugetFolder.FullName + "\tools"
+      echo "##vso[task.setvariable variable=pacPath]$pacPath"
+  displayName: 'Set PAC path'
+
+- task: PowerPlatformSetConnectionVariables@2
+  displayName: 'Set Connection Variables'
+  name: connectionVariables
+  inputs:
+    authenticationType: 'PowerPlatformSPN'
+    PowerPlatformSPN: ${{parameters.DevServiceConnectionName}}
+    Environment: ${{parameters.DevServiceConnectionURL}}
+
+- task: PowerShell@2
+  displayName: 'Create Auth'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $env:PATH = $env:PATH + ";" + "$(pacPath)"
+      pac auth create --url ${{parameters.DevServiceConnectionURL}} --name krotondev-SPN --applicationId $(connectionVariables.BuildTools.ApplicationId) --clientSecret $(connectionVariables.BuildTools.ClientSecret) --tenant $(connectionVariables.BuildTools.TenantId)
+
+- ${{ each package in parameters.PluginPackages }}:
+  - task: PowerShell@2
+    displayName: "Push Plugin Package ${{package.name}}"
+    inputs:
+      targetType: 'inline'
+      script: |
+        $env:PATH = $env:PATH + ";" + "$(pacPath)"
+        pac plugin push -id ${{package.id}} -pf $(Build.ArtifactStagingDirectory)\Plugins\${{package.name}}.1.0.0.nupkg

@@ -1,0 +1,57 @@
+resources:
+  repositories:
+  - repository: PipelineRepo
+    type: git
+    ref: develop
+    name: Athenas/devops-templates
+
+trigger:
+  branches:
+    include:
+    - refs/heads/dev
+  paths:
+    include:
+    - src/Plugins
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+- group: powerplatform-variable-group
+
+stages:
+- stage: build_deploy_plugins
+  displayName: 'Build and Deploy Plugins'
+  
+  jobs:
+  - job: build_deploy_plugins
+
+    pool:
+      vmImage: 'windows-2022'
+
+    steps:
+
+    # Checkout Pipelines
+    - checkout: git://$(System.TeamProject)/devops-templates@develop
+      path: 'PipelineUtils'
+      displayName: 'Checkout Pipeline Branch'
+
+    # Checkout Solution
+    - checkout: self
+      persistCredentials: true
+      displayName: 'Checkout Source Branch'
+
+    - template: Templates/build-plugin-package.yml@PipelineRepo
+      parameters:
+        DevServiceConnectionName: $(DevServiceConnectionName)
+        DevServiceConnectionURL: $(DevServiceConnectionURL)
+        PluginPackages:
+          - name: Kroton.Secretaria.EventoGestorAtivacao
+            id: f8a581de-594e-ee11-be6f-002248df557e
+          - name: Kroton.Secretaria.GestorAtivacao
+            id: 28eca021-5a4e-ee11-be6f-002248df557e
+          - name: Kroton.Secretaria.EventoGestorRematricula
+            id: 6ac1029e-6c4e-ee11-be6f-002248df55a1
+          - name: Kroton.Secretaria.GestorRematricula
+            id: 5f25268a-6c4e-ee11-be6f-6045bd3c2711
+

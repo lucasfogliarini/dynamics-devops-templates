@@ -1,0 +1,30 @@
+resources:
+  repositories:
+  - repository: PipelineRepo
+    type: git
+    ref: master
+    name: <PROJETO>/devops-templates
+
+pool:
+  vmImage: windows-latest
+
+trigger:
+  branches:
+    include:
+      - refs/heads/qa
+
+steps:
+    # Checkout Pipelines
+    - checkout: git://Athenas/devops-templates@master
+      path: 'PipelineUtils'
+      displayName: 'Checkout Pipeline Branch'
+    
+    # Checkout Solution
+    - checkout: self
+      persistCredentials: true
+      displayName: 'Checkout Changes'
+
+    - template: Templates/build-solution.yml@PipelineRepo
+      parameters:
+          SolutionName: '<NOMELOGICOSOLUCAO>'
+          Repo: $(Build.Repository.Name)

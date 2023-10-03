@@ -1,0 +1,44 @@
+parameters:
+- name: websiteId
+  type: string
+- name: solutionName
+  type: string
+- name: branch
+  type: string
+- name: repo
+  type: string
+
+variables:
+- group: powerplatform-variable-group
+
+steps:
+# Init git
+- script: |
+   git config user.email "$(Build.RequestedForEmail)"
+   git config user.name "$(Build.RequestedFor)"
+   git checkout origin/${{parameters.branch}} --track
+  workingDirectory: $(Build.SourcesDirectory)\${{parameters.repo}}
+  displayName: 'Initialize Git'
+
+- task: PowerPlatformToolInstaller@2
+  inputs:
+    DefaultVersion: true
+
+- task: microsoft-IsvExpTools.PowerPlatform-BuildTools.download-paportal.PowerPlatformDownloadPaportal@2
+  displayName: 'Power Platform Download PAPortal '
+  inputs:
+    authenticationType: PowerPlatformSPN
+    PowerPlatformSPN: $(DevServiceConnectionName)
+    Environment: $(DevServiceConnectionURL)
+    DownloadPath: $(Build.SourcesDirectory)\${{parameters.repo}}\${{parameters.solutionName}}\PowerPages
+    WebsiteId: ${{parameters.websiteId}}
+    Overwrite: true
+
+- script: |
+   git config user.email "$(Build.RequestedForEmail)"
+   git config user.name "$(Build.RequestedFor)"
+   git add --all
+   git commit -m "Build requested by $(Build.RequestedFor)"
+   git -c http.extraheader="AUTHORIZATION: bearer $(System.AccessToken)" push
+  workingDirectory: $(Build.SourcesDirectory)\${{parameters.repo}}
+  displayName: 'Commit changes'

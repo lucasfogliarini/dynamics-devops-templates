@@ -1,0 +1,58 @@
+resources:
+  repositories:
+  - repository: PipelineRepo
+    type: git
+    ref: master
+    name: <PROJETO>/devops-templates
+
+trigger: none
+
+pool:
+  vmImage: windows-2022
+
+variables:
+- group: powerplatform-variable-group
+
+stages:
+- stage: export_solution
+  displayName: 'Export solution'
+  
+  jobs:
+  - job: export_solution
+
+    pool:
+      vmImage: 'windows-2022'
+
+    steps:
+    - pwsh: |
+        # Workaround for git Filename too long issue
+        git config --system core.longpaths true
+      displayName: "Configuring core.longpaths true"
+
+    # Checkout Pipelines
+    - checkout: git://$(System.TeamProject)/devops-templates@master
+      path: 'PipelineUtils'
+      displayName: 'Checkout Pipeline Branch'
+    
+    # Checkout Solution
+    - checkout: git://$(System.TeamProject)/$(Build.Repository.Name)@dev
+      persistCredentials: true
+      displayName: 'Checkout Source Branch'
+    
+    - template: Templates/export-solution.yml@PipelineRepo
+      parameters:
+        SolutionName: '<NOMELOGICOSOLUCAO>'
+        MergeSolutionBeforeExport: true
+        CheckSolutionComponentTypes: false
+        AllowedSolutionComponentTypes: ''
+        CheckSolutionNamePattern: false
+        CheckTableBehavior: true
+        CheckEnvironmentVariables: false
+        CheckConnectionReferences: true
+        DevServiceConnectionName: $(DevServiceConnectionName)
+        DevServiceConnectionURL: $(DevServiceConnectionURL)
+        ApprovedSolutionNames: $(ApprovedSolutionNames)
+        ConnectionReferenceDisplayNamePattern: $(ConnectionReferenceDisplayNamePattern)
+        ConnectionReferenceLogicalNamePattern: $(ConnectionReferenceLogicalNamePattern)
+        Repo: $(Build.Repository.Name)
+        Branch: 'dev'

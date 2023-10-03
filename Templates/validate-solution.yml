@@ -4,6 +4,9 @@ parameters:
 - name: Repo
   type: string
 
+variables:
+- group: powerplatform-variable-group
+
 steps:
 
 - task: PowerPlatformToolInstaller@2
@@ -21,8 +24,7 @@ steps:
   displayName: 'Run Solution Checker'
   inputs:
     authenticationType: PowerPlatformSPN
-    PowerPlatformSPN: 'kroton-dev-core'
+    PowerPlatformSPN: $(DevServiceConnectionName)
     FilesToAnalyze: '$(Build.ArtifactStagingDirectory)\${{parameters.SolutionName}}_unmanaged.zip'
     RuleSet: '0ad12346-e108-40b8-a956-9a8f95ea18c9'
-    RulesToOverride: '[{"Id":"web-use-strict-mode","OverrideLevel":"Informational"},{"Id":"web-use-strict-equality-operators","OverrideLevel":"Informational"},{"Id":"web-remove-console","OverrideLevel":"Informational"},{"Id":"web-remove-debug-script","OverrideLevel":"Informational"},{"Id":"web-use-navigation-api","OverrideLevel":"Informational"},{"Id":"web-use-client-context","OverrideLevel":"Informational"},{"Id":"web-use-global-context","OverrideLevel":"Informational"},{"Id":"web-remove-alert","OverrideLevel":"Informational"},{"Id":"web-use-relative-uri","OverrideLevel":"Informational"},{"Id":"web-use-async","OverrideLevel":"Informational"},{"Id":"web-avoid-browser-specific-api","OverrideLevel":"Informational"},{"Id":"web-avoid-crm2011-service-odata","OverrideLevel":"Informational"},{"Id":"web-avoid-eval","OverrideLevel":"Informational"},{"Id":"web-avoid-crm2011-service-soap","OverrideLevel":"Informational"},{"Id":"web-avoid-window-top","OverrideLevel":"Informational"}]'
     condition: and(succeeded(), and(ne(variables['DisableSolutionChecker'], 'true'), eq(variables['Build.Reason'], 'PullRequest')))

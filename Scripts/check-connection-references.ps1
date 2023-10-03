@@ -2,14 +2,13 @@ function Test-ConnectionReferences {
     param (
         [Parameter()] [String]$token,
         [Parameter(Mandatory)] [String]$dataverseHost,
-        [Parameter(Mandatory)] [String]$solutionName
+        [Parameter(Mandatory)] [String]$solutionName,
+        [Parameter(Mandatory)] [String]$displayNamePattern,
+        [Parameter(Mandatory)] [String]$logicalNamePattern
     )
     
     # Load Required PowerShell Files
     Invoke-Expression ". $env:POWERSHELLPATH/dataverse-webapi-functions.ps1"
-    
-    $patternConnectionReferenceDisplayName = "^athenas-[\w-]+$"
-    $patternConnectionReferenceLogicalName = "^kcs_[\w_]+$"
 
     $requestUrlRemainder = "solutions?`$filter=uniquename eq '$solutionName'"
 
@@ -47,7 +46,7 @@ function Test-ConnectionReferences {
 
         Write-Host "Logical Name: $logicalName / DisplayName: $displayName"
 
-        if ($logicalName -notmatch $patternConnectionReferenceLogicalName -or $displayName -notmatch $patternConnectionReferenceDisplayName){
+        if ($logicalName -notmatch $logicalNamePattern -or $displayName -notmatch $displayNamePattern){
             Write-Error "Solução contem referencias de conexão diferente das padrões"
             exit(1)
         }else {

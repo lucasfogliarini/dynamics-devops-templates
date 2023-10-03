@@ -1,0 +1,44 @@
+resources:
+  repositories:
+    - repository: PipelineRepo
+      type: git
+      ref: master
+      name: <PROJETO>/devops-templates
+
+trigger:
+  branches:
+    include:
+      - refs/pull/qa
+
+pool:
+  vmImage: windows-latest
+stages:
+- stage: build_solution
+  displayName: 'Build Solution' 
+  
+  jobs:
+  - job: build_solution
+
+    pool:
+      vmImage: 'windows-latest'
+
+    steps:
+    - pwsh: |
+        # Workaround for git Filename too long issue
+        git config --system core.longpaths true
+      displayName: "Configuring core.longpaths true"
+    
+    # Checkout Pipelines
+    - checkout: git://Athenas/devops-templates@master
+      path: 'PipelineUtils'
+      displayName: 'Checkout Pipeline Branch'
+    
+    # Checkout Solution
+    - checkout: self
+      persistCredentials: true
+      displayName: 'Checkout Changes'
+    
+    - template: Templates/validate-solution.yml@PipelineRepo
+      parameters:
+        SolutionName: '<NOMELOGICOSOLUCAO>'
+        Repo: $(Build.Repository.Name)

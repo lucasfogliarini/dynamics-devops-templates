@@ -1,0 +1,54 @@
+parameters:
+- name: projectPath
+  displayName: Project Path
+  type: string
+  default: '**/*.csproj'
+- name: buildBreakerEnabled
+  type: boolean
+  default: true
+
+steps:
+  - task: LogVariables@1
+    displayName: "Log Variables"
+
+  - task: NuGetToolInstaller@1
+    inputs:
+      versionSpec: 5.8
+      checkLatest: false
+
+  - task: NuGetCommand@2
+    inputs:
+      command: 'restore'
+      restoreSolution: '**/*.sln'
+      feedsToUse: 'select'
+      vstsFeed: 'c8ea2da2-3c79-4dce-8c94-9b488d204bc0/b728f3dd-9951-441b-89e4-e3944d47bda3'
+
+  - task: DotNetCoreCLI@2
+    displayName: "Project Build"
+    inputs:
+      command: 'build'
+      projects: '**/*.sln'
+      arguments: '--configuration $(BuildConfiguration)'
+      
+  - template: sonarqube.yml
+    parameters:
+      sonarCloud: 'SonarCloudCogna-Athenas'
+      organization: 'cogna-educacao'
+      scannerMode: 'MSBuild'
+      buildBreakerEnabled: ${{parameters.buildBreakerEnabled}}
+
+  - task: DotNetCoreCLI@2
+    displayName: "Project Publish"
+    inputs:
+      command: 'publish'
+      projects: ${{ parameters.projectPath }}
+      publishWebProjects: false
+      arguments: '--configuration $(BuildConfiguration) --output output/app'
+      zipAfterPublish: true
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Build Artifacts'
+    condition: or(eq(variables['Build.SourceBranchName'], 'merge'), eq(variables['Build.SourceBranchName'], 'develop'),eq(variables['Build.SourceBranchName'], 'master'),eq(variables['Build.SourceBranchName'], 'template-build-fn'))
+    inputs:
+      pathToPublish: '$(Build.SourcesDirectory)/output/app'
+      artifactName: drop
