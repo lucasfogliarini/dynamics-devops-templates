@@ -54,5 +54,4 @@ stages:
         ApprovedSolutionNames: $(ApprovedSolutionNames)
         ConnectionReferenceDisplayNamePattern: $(ConnectionReferenceDisplayNamePattern)
         ConnectionReferenceLogicalNamePattern: $(ConnectionReferenceLogicalNamePattern)
-        Repo: $(Build.Repository.Name)
         Branch: 'dev'

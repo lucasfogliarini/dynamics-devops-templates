@@ -10,6 +10,9 @@ trigger:
     include:
       - refs/pull/qa
 
+variables:
+- group: powerplatform-variable-group
+
 pool:
   vmImage: windows-latest
 stages:
@@ -42,3 +45,4 @@ stages:
       parameters:
         SolutionName: '<NOMELOGICOSOLUCAO>'
         Repo: $(Build.Repository.Name)
+        DevServiceConnectionName: $(DevServiceConnectionName)

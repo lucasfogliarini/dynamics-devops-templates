@@ -48,7 +48,7 @@ steps:
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Build Artifacts'
-    condition: or(eq(variables['Build.SourceBranchName'], 'merge'), eq(variables['Build.SourceBranchName'], 'develop'),eq(variables['Build.SourceBranchName'], 'master'),eq(variables['Build.SourceBranchName'], 'template-build-fn'))
+    condition: or(eq(variables['Build.SourceBranchName'], 'merge'), eq(variables['Build.SourceBranchName'], 'develop'),eq(variables['Build.SourceBranchName'], 'master'),eq(variables['Build.SourceBranchName'], 'template-build-fn'), contains(variables['Build.SourceBranchName'], 'hf-'))
     inputs:
       pathToPublish: '$(Build.SourcesDirectory)/output/app'
       artifactName: drop

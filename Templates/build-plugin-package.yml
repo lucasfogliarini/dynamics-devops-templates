@@ -32,6 +32,7 @@ steps:
       **\bin\**\*test.dll
       **\bin\**\*tests.dll
     searchFolder: '$(System.DefaultWorkingDirectory)'
+    runSettingsFile: '$(Build.Repository.Name)/src/Plugins/testconfig.runsettings'
     codeCoverageEnabled: true
 
 - task: CopyFiles@2

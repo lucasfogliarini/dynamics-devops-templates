@@ -4,8 +4,9 @@ function Get-SpnToken {
         [Parameter(Mandatory)] [String]$tenantId,
         [Parameter(Mandatory)] [String]$clientId,
         [Parameter(Mandatory)] [String]$clientSecret,
-        [Parameter(Mandatory)] [String]$dataverseHost
+        [Parameter(Mandatory)] [String]$url
     )
+    $dataverseHost = Get-HostFromUrl $url
     $body = @{client_id = $clientId; client_secret = $clientSecret; grant_type = "client_credentials"; scope = "https://$dataverseHost/.default"; }
     $OAuthReq = Invoke-RestMethod -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -Body $body
 
@@ -39,7 +40,7 @@ function Set-SpnTokenVariableWithinAgent {
     
     Write-Host "Dataverse Host: "$dataverseHost
     
-    $spnToken = Get-SpnToken $tenantId $clientId $clientSecret $dataverseHost
+    $spnToken = Get-SpnToken $tenantId $clientId $clientSecret $dynamicsURL
 
     Write-Host "##vso[task.setvariable variable=SpnToken;issecret=true]$spnToken"
 }
