@@ -20,6 +20,12 @@ parameters:
 - name: CheckConnectionReferences
   type: boolean
   default: false
+- name: ApprovalType
+  type: string
+  values:
+    - PullRequest
+    - Simple
+  default: PullRequest
   
   # Settings
 - name: SolutionName
@@ -220,15 +226,18 @@ steps:
  # add Azure DevOps extension
 - script: az extension add -n azure-devops
   displayName: 'Install Azure DevOps Extension'
+  condition: and(succeeded(), eq('${{parameters.ApprovalType}}', 'PullRequest'))
 
   # Set default org and project
 - powershell: az devops configure --defaults organization=$(System.CollectionUri) project="$(System.TeamProject)"
   env:
       AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
   displayName: 'Set az devops defaults'
+  condition: and(succeeded(), eq('${{parameters.ApprovalType}}', 'PullRequest'))
 
   # Create Pull Requests
 - powershell: az repos pr create --repository "$(Build.Repository.Name)" --source-branch 'refs/heads/dev' --delete-source-branch $false --auto-complete $false --target-branch 'refs/heads/qa' --reviewers="$(Build.RequestedForEmail)" --title "Build requested for $(Build.RequestedFor)"
   env:
     AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
   displayName: 'Create PR - dev to qa'
+  condition: and(succeeded(), eq('${{parameters.ApprovalType}}', 'PullRequest'))
