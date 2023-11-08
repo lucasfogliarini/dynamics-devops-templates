@@ -226,7 +226,7 @@ steps:
   workingDirectory: $(Build.SourcesDirectory)\$(Build.Repository.Name)
   displayName: 'Commit changes'
 
- # add Azure DevOps extension
+  # add Azure DevOps extension
 - script: az extension add -n azure-devops
   displayName: 'Install Azure DevOps Extension'
   condition: and(succeeded(), eq('${{parameters.ApprovalType}}', 'PullRequest'))
@@ -244,3 +244,22 @@ steps:
     AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
   displayName: 'Create PR - dev to ${{parameters.TargetBranch}}'
   condition: and(succeeded(), eq('${{parameters.ApprovalType}}', 'PullRequest'))
+
+- task: PowerPlatformExportSolution@2
+  inputs:
+    authenticationType: 'PowerPlatformSPN'
+    PowerPlatformSPN: ${{parameters.DevServiceConnectionName}}
+    SolutionName: '${{parameters.SolutionName}}'
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)\${{parameters.SolutionName}}\${{parameters.SolutionName}}_managed.zip'
+    Managed: true
+    AsyncOperation: true
+    MaxAsyncWaitTime: '120'
+  displayName: 'Export Managed Solution'
+  condition: and(succeeded(), eq('${{parameters.ApprovalType}}', 'Simple'))
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)'
+    artifact: drop
+  displayName: 'Publish Artifacts'
+  condition: and(succeeded(), eq('${{parameters.ApprovalType}}', 'Simple'))
