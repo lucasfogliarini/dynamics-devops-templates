@@ -42,6 +42,9 @@ parameters:
   type: string
 - name: Branch
   type: string
+- name: TargetBranch
+  type: string
+  default: 'refs/heads/qa'
 
 steps:
 # Init git
@@ -236,8 +239,8 @@ steps:
   condition: and(succeeded(), eq('${{parameters.ApprovalType}}', 'PullRequest'))
 
   # Create Pull Requests
-- powershell: az repos pr create --repository "$(Build.Repository.Name)" --source-branch 'refs/heads/dev' --delete-source-branch $false --auto-complete $false --target-branch 'refs/heads/qa' --reviewers="$(Build.RequestedForEmail)" --title "Build requested for $(Build.RequestedFor)"
+- powershell: az repos pr create --repository "$(Build.Repository.Name)" --source-branch 'refs/heads/dev' --delete-source-branch $false --auto-complete $false --target-branch '${{parameters.TargetBranch}}' --reviewers="$(Build.RequestedForEmail)" --title "Build requested for $(Build.RequestedFor)"
   env:
     AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
-  displayName: 'Create PR - dev to qa'
+  displayName: 'Create PR - dev to ${{parameters.TargetBranch}}'
   condition: and(succeeded(), eq('${{parameters.ApprovalType}}', 'PullRequest'))
