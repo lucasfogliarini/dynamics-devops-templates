@@ -1,4 +1,4 @@
-function Check-SecurityRole {
+function Test-SecurityRole {
     param(
         [string] $SolutionName,
         [string] $Repo
@@ -24,7 +24,7 @@ function Check-SecurityRole {
 
         if ($xmlContent.Role.RolePrivileges -is [Xml.XmlElement]) {
 
-            $privileges = $xmlContent.Role.RolePrivileges | select -ExpandProperty childnodes | where {$_.name -like '*delete*'}
+            $privileges = $xmlContent.Role.RolePrivileges | Select-Object -ExpandProperty childnodes | Where-Object {$_.name -like '*delete*'}
 
             $privileges | ForEach-Object -Process  { 
                 if ($_.level -eq 'Global') { 
@@ -52,7 +52,7 @@ function Check-SecurityRole {
     }
 }
 
-function Display-AnalisysResult {
+function Show-AnalisysResult {
     param(
         [hashtable]$wrongRoles
     )

@@ -1,4 +1,4 @@
-function Check-Relationships {
+function Test-Relationships {
     param(
         [string] $SolutionName,
         [string] $Repo
@@ -22,7 +22,7 @@ function Check-Relationships {
 
         if ($xmlContent.EntityRelationships -is [Xml.XmlElement]) {
 
-            $relationships = $xmlContent.EntityRelationships | select -ExpandProperty childnodes #| where {$_.name -like '*delete*'}
+            $relationships = $xmlContent.EntityRelationships | Select-Object -ExpandProperty childnodes #| where {$_.name -like '*delete*'}
 
             $relationships | ForEach-Object -Process  { 
 
