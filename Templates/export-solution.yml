@@ -20,6 +20,12 @@ parameters:
 - name: CheckConnectionReferences
   type: boolean
   default: false
+- name: CheckSecurityRoles
+  type: boolean
+  default: false
+- name: CheckRelationships
+  type: boolean
+  default: false
 - name: ApprovalType
   type: string
   values:
@@ -169,6 +175,34 @@ steps:
   condition: and(succeeded(), ${{parameters.CheckTableBehavior}})
   env:
    MAPPED_SPN_Token: $(SpnToken)
+
+# Check Security Profiles
+- powershell: |
+    # load PowerShell files into memory
+    . "$env:POWERSHELLPATH/security-role-checker.ps1"
+    try {
+        Test-SecurityRole "${{parameters.SolutionName}}" $(Build.Repository.Name)
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while checking security roles."
+        Write-Host $_
+        exit 1;
+    }
+  displayName: 'Check Security Profiles'
+  condition: and(succeeded(), ${{parameters.CheckSecurityRoles}})
+
+# Check Relationships
+- powershell: |
+    # load PowerShell files into memory
+    . "$env:POWERSHELLPATH/check-relationships.ps1"
+    try {
+        Test-Relationships "${{parameters.SolutionName}}" $(Build.Repository.Name)
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while checking relationships."
+        Write-Host $_
+        exit 1;
+    }
+  displayName: 'Check Relationships'
+  condition: and(succeeded(), ${{parameters.CheckRelationships}})
 
 - task: PowerPlatformPublishCustomizations@2
   inputs:
