@@ -82,6 +82,11 @@ Para instalar e utilizar os scripts de devops você deve seguir a instruções a
     <td>https://krotondev.crm2.dynamics.com</td>
   </tr>
   <tr>
+    <td>PublisherPrefix</td>
+    <td>Prefixo do publicador</td>
+    <td>kcs</td>
+  </tr>
+  <tr>
     <td>SonarCloud</td>
     <td></td>
     <td>SonarCloudCogna-Athenas</td>
@@ -264,3 +269,21 @@ Esse pipeline deve ser utilizado para realizar o build dos Pacotes de Plugin e s
 **Variável**: N/A  
 **Valor Padrão**: N/A  
 **Descrição**: Essa tarefa ativa o Routing Rule Set informado na variável **routingRuleId**, essa tarefa é utilizada após realizar o upgrade da solução.
+
+### Check Table Behavior
+**Uso**: export-solution  
+**Variável**: CheckTableBehavior  
+**Valor Padrão**: true  
+**Descrição**: Essa tarefa identifica se há tabelas com o comportamento **Incluir todos os componentes** na solução, caso exista a tarefa produz uma falha na build.
+
+### Check Security Profiles
+**Uso**: export-solution  
+**Variável**: CheckSecurityRoles  
+**Valor Padrão**: false  
+**Descrição**: Essa tarefa procura por perfis de segurança com permissão de delete definida com o valor **Global**, caso encontre a build irá falhar.
+
+### Check Relationships
+**Uso**: export-solution  
+**Variável**: CheckRelationships  
+**Valor Padrão**: false  
+**Descrição**: Essa tarefa verifica se existem relacionamentos com a opção de **Cascade Delete** definida com o valor **Cascade**, caso encontre pelo menos uma a build falha.
