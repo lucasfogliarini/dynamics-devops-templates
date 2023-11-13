@@ -10,9 +10,6 @@ parameters:
   displayName: Scanner Mode
   type: string
   default: 'MSBuild'
-- name: buildBreakerEnabled
-  type: boolean
-  default: true
 
 steps:
 - task: SonarCloudPrepare@1
@@ -23,13 +20,12 @@ steps:
     organization: ${{ parameters.organization }}
     scannerMode: 'CLI'
     configMode: 'manual'
-    cliprojectKey: 'kdop_$(Build.Repository.Name)'
+    cliprojectKey: '$(Build.Repository.Id)'
     cliprojectName: '$(Build.Repository.Name)'
     cliSources: '.'
     extraProperties: |
       sonar.qualitygate.wait=$(sonar.qg)]
       sonar.qualitygate='Athenas'
-  condition: eq(variables['sonar.run'], true)
   
 
 - task: DotNetCoreCLI@2
@@ -54,4 +50,3 @@ steps:
   inputs:
     SonarCloud: ${{ parameters.sonarCloud }}
     organization: ${{ parameters.organization }}
-  condition: and(succeeded(), ${{parameters.buildBreakerEnabled}})
