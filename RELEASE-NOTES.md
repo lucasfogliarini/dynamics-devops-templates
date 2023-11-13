@@ -17,3 +17,4 @@ Implementação da opção de alternar o build entre o modelo com aprovação vi
 
 ### Bug Fixes
 - Check Solution Publisher recebe o prefixo do publicador como parâmetro.
+- SonarCloud Prepare cria o projeto com o Id do repositório no AzDevOps como chave no Sonar.
