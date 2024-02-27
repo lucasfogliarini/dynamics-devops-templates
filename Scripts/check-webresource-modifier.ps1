@@ -2,7 +2,7 @@ function Get-UnallowedWRModifiers {
     param(
         [string]$url,
         [string]$token,
-        [string]$solutionName
+        [string]$solutionName,
         [string]$allowedModifier
     )
 
@@ -22,6 +22,9 @@ function Get-UnallowedWRModifiers {
                     </filter>
                 </link-entity>
                 </link-entity>
+                <link-entity name="systemuser" from="systemuserid" to="modifiedby" link-type='inner' alias="modifier">
+                  <attribute name="fullname" />
+                </link-entity>
             </entity>
         </fetch>
 "@;
@@ -38,10 +41,18 @@ function Get-UnallowedWRModifiers {
 
     if ($($response.value).Count -eq 0)
     {
-        Write-Host "Nenhum JavaScript em $solutionName foi modificado por usuário não autorizado"
+        Write-Host "Nenhum JavaScript em $solutionName foi modificado por usuario nao autorizado"
         exit(0)
     }
     else {
-        Write-Error "A solução $solutionName contém modificadores de JavaScript não autorizados"
+        Write-Warning "A solucao $solutionName contem modificadores de JavaScript nao autorizados"
+        Write-Host "JAVASCRIPT -> ULTIMO MODIFICADOR:"
+        
+        foreach ($wr in $response.value) {
+            Write-Host "$($wr.name) -> $($wr.'modifier.fullname')"
+        }
+        Write-Error "Modificadores nao autorizados encontrados. Pipeline cancelado"
+
         exit(1)
     }
+}

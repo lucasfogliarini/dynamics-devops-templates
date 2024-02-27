@@ -49,6 +49,7 @@ stages:
         CheckTableBehavior: true
         CheckEnvironmentVariables: false
         CheckConnectionReferences: true
+        CheckWebresourceModifier: true
         DevServiceConnectionName: $(DevServiceConnectionName)
         DevServiceConnectionURL: $(DevServiceConnectionURL)
         ApprovedSolutionNames: $(ApprovedSolutionNames)
