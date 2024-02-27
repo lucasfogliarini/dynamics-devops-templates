@@ -35,6 +35,8 @@ parameters:
 - name: CheckWebresourceModifier
   type: boolean
   default: true
+- name: AllowedModifier
+  type: string
   
   # Settings
 - name: SolutionName
