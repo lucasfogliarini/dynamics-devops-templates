@@ -32,6 +32,9 @@ parameters:
     - PullRequest
     - Simple
   default: PullRequest
+- name: CheckWebresourceModifier
+  type: boolean
+  default: true
   
   # Settings
 - name: SolutionName
@@ -206,6 +209,20 @@ steps:
     }
   displayName: 'Check Relationships'
   condition: and(succeeded(), ${{parameters.CheckRelationships}})
+
+# Check Webresource Modifier
+- powershell: |
+    # load PowerShell files into memory
+    . "$env:POWERSHELLPATH/check-webresource-modifier.ps1"
+    try {
+        Get-UnallowedWRModifiers "${{parameters.DevServiceConnectionURL}}" "$env:MAPPED_SPN_Token" "${{parameters.SolutionName}}" "${{parameters.AllowedModifier}}"
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while checking webresource modifier."
+        Write-Host $_
+        exit 1;
+    }
+  displayName: 'Check Webresource Modifier'
+  condition: and(succeeded(), ${{parameters.CheckWebresourceModifier}})
 
 - task: PowerPlatformPublishCustomizations@2
   inputs:
