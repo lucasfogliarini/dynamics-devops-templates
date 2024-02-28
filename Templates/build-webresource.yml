@@ -1,103 +1,47 @@
-resources:
-  repositories:
-  - repository: PipelineRepo
-    type: git
-    ref: master
-    name: GestaoPolos/devops-templates
-
-trigger:
-  branches:
-    include:
-    - refs/heads/dev
-  paths:
-    include:
-    - src/WebResources
-
-pool:
-  vmImage: 'windows-latest'
-
-variables:
-- group: powerplatform-variable-group
-
+parameters:
 - name: SolutionName
-  value: GestaodePolosEstruturaOrganizacional
+  type: string
 
-stages:
-- stage: build_deploy_webresources
-  displayName: 'Build and Deploy WebResources'
+steps:
+# Init git
+- script: |
+   git config user.email "$(Build.RequestedForEmail)"
+   git config user.name "$(Build.RequestedFor)"       
+   git checkout origin/${{parameters.Branch}} --track
+  workingDirectory: $(Build.SourcesDirectory)\$(Build.Repository.Name)
+  displayName: 'Initialize Git'
+
+- task: PowerPlatformToolInstaller@2
+  inputs:
+    DefaultVersion: true
+
+# Use set-connection-variables task to get values from AzDO Service Connection to be used in scripts that don't use tasks
+- task: PowerPlatformSetConnectionVariables@2
+  displayName: 'Set Connection Variables'
+  name: connectionVariables
+  inputs:
+    authenticationType: 'PowerPlatformSPN'
+    PowerPlatformSPN: ${{parameters.DevServiceConnectionName}}
+    Environment: ${{parameters.DevServiceConnectionURL}}
+
+- template: set-spn-token.yml
+  parameters:
+    dynamicsUrl: ${{parameters.DevServiceConnectionURL}}
+    tenantId: $(connectionVariables.BuildTools.TenantId)
+    clientId: $(connectionVariables.BuildTools.ApplicationId)
+    clientSecret: $(connectionVariables.BuildTools.ClientSecret)
   
-  jobs:
-  - job: build_deploy_webresources
-
-    pool:
-      vmImage: 'windows-2022'
-
-    steps:
-    - pwsh: |
-        # Workaround for git Filename too long issue
-        git config --system core.longpaths true
-      displayName: "Configuring core.longpaths true"
-
-    # Checkout Pipelines
-    - checkout: git://$(System.TeamProject)/devops-templates@master
-      path: 'PipelineUtils'
-      displayName: 'Checkout Pipeline Branch'
-    
-    # Checkout Solution
-    - checkout: git://$(System.TeamProject)/$(Build.Repository.Name)@dev
-      persistCredentials: true
-      displayName: 'Checkout Source Branch'
-
-
-
-
-    ###########################################################################################################################
-    ###########################################################################################################################
-    ###########################################################################################################################
-    # TODO SEPARAR EM TEMPLATE
-    ###########################################################################################################################
-    ###########################################################################################################################
-    ###########################################################################################################################
-
-    # Init git
-    # git checkout origin/${{parameters.Branch}} --track
-    - script: |
-        git config user.email "$(Build.RequestedForEmail)"
-        git config user.name "$(Build.RequestedFor)"       
-        git checkout origin/dev --track
-      workingDirectory: $(Build.SourcesDirectory)\$(Build.Repository.Name)
-      displayName: 'Initialize Git'
-
-    - task: PowerPlatformToolInstaller@2
-      inputs:
-        DefaultVersion: true
-
-    # Use set-connection-variables task to get values from AzDO Service Connection to be used in scripts that don't use tasks
-    - task: PowerPlatformSetConnectionVariables@2
-      displayName: 'Set Connection Variables'
-      name: connectionVariables
-      inputs:
-        authenticationType: 'PowerPlatformSPN'
-        PowerPlatformSPN: $(DevServiceConnectionName)
-        Environment: $(DevServiceConnectionURL)
-
-    - template: Templates/set-spn-token.yml@PipelineRepo
-      parameters:
-        dynamicsUrl: $(DevServiceConnectionURL)
-        tenantId: $(connectionVariables.BuildTools.TenantId)
-        clientId: $(connectionVariables.BuildTools.ApplicationId)
-        clientSecret: $(connectionVariables.BuildTools.ClientSecret)
-    
-    - powershell: |
-        # load PowerShell files into memory
-        . "$(Build.SourcesDirectory)\$(Build.Repository.Name)\upload-webresource.ps1"
-        try {
-            Upload-Javascript "$(DevServiceConnectionURL)" "$env:MAPPED_SPN_Token" "$(SolutionName)" "$(Build.SourcesDirectory)\$(Build.Repository.Name)\src\WebResources"
-        } catch {
-            Write-Host "##vso[task.logissue type=warning]Error occurred while upload web resource solution."
-            Write-Host $_
-            exit 1;
-        }
-      displayName: 'Upload Web Resources Javascript'
-      env:
-        MAPPED_SPN_Token: $(SpnToken)
+# Upload JavaScript
+- powershell: |
+    # load PowerShell files into memory
+    . "$(Build.SourcesDirectory)\$(Build.Repository.Name)\upload-webresource.ps1"
+    try {
+        Upload-Javascript "$(DevServiceConnectionURL)" "$env:MAPPED_SPN_Token" "$(SolutionName)" "$(Build.SourcesDirectory)\$(Build.Repository.Name)\src\WebResources"
+    } catch {
+        Write-Host "##vso[task.logissue type=warning]Error occurred while upload webresource solution."
+        Write-Host $_
+        exit 1;
+    }
+    displayName: 'Upload Web Resources Javascript'
+    env:
+     MAPPED_SPN_Token: $(SpnToken)
