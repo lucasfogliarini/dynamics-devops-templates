@@ -88,7 +88,7 @@ function Upload-Javascript {
             Write-Host "Javascript atualizado."
         }
         else {
-            Write-Output "Javascript '$($resource.name)' já está atualizado."
+            Write-Output "Javascript '$($resource.name)' ja esta atualizado."
         }
     }
 }
