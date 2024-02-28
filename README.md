@@ -302,7 +302,7 @@ Esse pipeline é responsável por subir todos os recursos da web contidos na pas
 **Descrição**: Essa tarefa verifica se existem relacionamentos com a opção de **Cascade Delete** definida com o valor **Cascade**, caso encontre pelo menos uma a build falha.
 
 ### Check Webresource Author
-**Uso**: export-solution
-**Variável**: CheckWebresourceAuthor
-**Valor Padrão**: true
-**Descrição**: Essa tarefa verifica se existem web resources cujo ultimo a modificar não foi o usiário padrão do devops, esse padrão indica um desvio de processo, manipulação direta no ambiente de dev do we resource.
+**Uso**: export-solution  
+**Variável**: CheckWebresourceAuthor  
+**Valor Padrão**: true  
+**Descrição**: Essa tarefa verifica se existem web resources cujo ultimo a modificar não foi o usiário padrão do devops, esse padrão indica um desvio de processo, manipulação direta no ambiente de dev do we resource.  
