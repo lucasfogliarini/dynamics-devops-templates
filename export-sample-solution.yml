@@ -47,9 +47,10 @@ stages:
         AllowedSolutionComponentTypes: ''
         CheckSolutionNamePattern: false
         CheckTableBehavior: true
+        CheckWebresourceAuthor: true
+        AllowedAuthor: $(AllowedAuthor)
         CheckEnvironmentVariables: false
         CheckConnectionReferences: true
-        CheckWebresourceModifier: true
         DevServiceConnectionName: $(DevServiceConnectionName)
         DevServiceConnectionURL: $(DevServiceConnectionURL)
         ApprovedSolutionNames: $(ApprovedSolutionNames)

@@ -19,10 +19,14 @@ Todos os repositórios tem um conjunto de 3 pipelines (export, validate e build)
 ├── src  
 │   ├── Plugins  
 │   │   ├── **/*.cs  
+│   ├── WebResources  
+│   │   ├── **/*.js   
 ├── README.md  
 ├── validate-solution.yml  
 ├── export-solution.yml  
 ├── build-solution.yml  
+├── build-plugins.yml  
+├── build-webresources.yml  
 └── .gitignore  
 ```
 
@@ -42,6 +46,7 @@ Para instalar e utilizar os scripts de devops você deve seguir a instruções a
     - validate-sample-solution.yml
     - build-sample-solution.yml
     - build-sample-plugins.yml
+    - build-sample-webresources.yml
 - Criar uma Library (Grupo de variáveis) chamada **powerplatform-variable-group**, liberar acesso a todos os pipelines clicando em **Pipeline permissions** > **Open Access**
 - Adicionar na library os valores conforme tabela abaixo:
 
@@ -95,6 +100,11 @@ Para instalar e utilizar os scripts de devops você deve seguir a instruções a
     <td>SonarOrganization</td>
     <td></td>
     <td>cogna-educacao</td>
+  </tr>
+  <tr>
+    <td>AllowedWRAuthor</td>
+    <td>systemuserid do usuário do devops</td>
+    <td>9C225051-2E38-EC11-8C64-00224837D840</td>
   </tr>
 </table>
 
@@ -150,7 +160,7 @@ Para atualizar a versão crie um pipeline baseado no arquivo update-pipeline-rep
 > É recomendado testar as novas versões de tasks e pipelines antes de fazer merge com a sua branch principal (main/master), para isso você pode definir uma branch temporária e apontar um dos seus pipelines para ela e realizar os testes.
 
 
-## Pipelines
+## Pipelines de Build
 
 ### export-solution
 Esse pipeline é utilizado para exportar a solução do dynamics, durante o processo é possível realizar o merge caso hajam patches, fazer as checagens de padrões de projeto e gravar as alterações no repositório git correspondente a solução.
@@ -166,11 +176,14 @@ Esse pipeline é utilizado para empacotar a solução como gerenciada e produzir
 
 ### hotfix
 Esse pipeline deve ser utilizado para exportar soluções de hotfix para correções urgentes nos ambientes de HML e PROD, requer que seja passado como parâmetro o nome lógico da solução.
-> A permanência dos hotfixes nos ambientes é temporaria, devendo ser excluído cada vez que houver um deploy de sprint que contiver os componentes alterados no hotfix.
+> A permanência dos hotfixes nos ambientes é temporária, devendo ser excluído cada vez que houver um deploy de sprint que contiver os componentes alterados no hotfix.
 
 ### build-plugin
 Esse pipeline deve ser utilizado para realizar o build dos Pacotes de Plugin e subir no Plugin Registration os arquivos nuget que são o resultado do build.
 > Para preencher os valores da propriedade **PluginPackages** no pipeline build-plugins.yml, é necessário registrar o Pacote de Plugin no Plugin Registration previamente e buscar o id gerado na tabela pluginpackages através da ferramenta SQL4CDS.
+
+### build-webresources
+Esse pipeline é responsável por subir todos os recursos da web contidos na pasta WebResources do repositório, permitindo que seja feita uma checagem de processo no momento do export-solution.
 
 ## Tarefas Customizadas
 
@@ -287,3 +300,9 @@ Esse pipeline deve ser utilizado para realizar o build dos Pacotes de Plugin e s
 **Variável**: CheckRelationships  
 **Valor Padrão**: false  
 **Descrição**: Essa tarefa verifica se existem relacionamentos com a opção de **Cascade Delete** definida com o valor **Cascade**, caso encontre pelo menos uma a build falha.
+
+### Check Webresource Author
+**Uso**: export-solution
+**Variável**: CheckWebresourceAuthor
+**Valor Padrão**: true
+**Descrição**: Essa tarefa verifica se existem web resources cujo ultimo a modificar não foi o usiário padrão do devops, esse padrão indica um desvio de processo, manipulação direta no ambiente de dev do we resource.

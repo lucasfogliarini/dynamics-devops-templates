@@ -223,7 +223,7 @@ steps:
         Write-Host $_
         exit 1;
     }
-  displayName: 'Check Webresource Author'
+  displayName: 'Check WebResource Author'
   condition: and(succeeded(), ${{parameters.CheckWebresourceAuthor}})
 
 - task: PowerPlatformPublishCustomizations@2
