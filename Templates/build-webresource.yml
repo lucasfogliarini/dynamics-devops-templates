@@ -1,6 +1,12 @@
 parameters:
 - name: SolutionName
   type: string
+- name: Branch
+  type: string
+- name: DevServiceConnectionName
+  type: string
+- name: DevServiceConnectionURL
+  type: string
 
 steps:
 # Init git
