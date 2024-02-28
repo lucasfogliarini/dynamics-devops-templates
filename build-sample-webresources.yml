@@ -20,14 +20,14 @@ variables:
 - group: powerplatform-variable-group
 
 stages:
-- stage: export_solution
-  displayName: 'Export solution'
+- stage: build_deploy_webresources
+  displayName: 'Build and Deploy WebResources'
   
   jobs:
-  - job: export_solution
+  - job: build_deploy_webresources
 
     pool:
-      vmImage: windows-latest
+      vmImage: 'windows-2022'
 
     steps:
     - pwsh: |
