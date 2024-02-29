@@ -9,13 +9,6 @@ parameters:
   type: string
 
 steps:
-# Init git
-- script: |
-   git config user.email "$(Build.RequestedForEmail)"
-   git config user.name "$(Build.RequestedFor)"       
-   git checkout origin/${{parameters.Branch}} --track
-  workingDirectory: $(Build.SourcesDirectory)\$(Build.Repository.Name)
-  displayName: 'Initialize Git'
 
 - task: PowerPlatformToolInstaller@2
   inputs:
@@ -40,14 +33,14 @@ steps:
 # Upload JavaScript
 - powershell: |
     # load PowerShell files into memory
-    . "$(Build.SourcesDirectory)\$(Build.Repository.Name)\upload-webresource.ps1"
+    . "$env:POWERSHELLPATH/upload-webresource.ps1"
     try {
-        Upload-Javascript "$(DevServiceConnectionURL)" "$env:MAPPED_SPN_Token" "$(SolutionName)" "$(Build.SourcesDirectory)\$(Build.Repository.Name)\src\WebResources"
+        Upload-Javascript "${{parameters.DevServiceConnectionURL}}" "$env:MAPPED_SPN_Token" "${{parameters.SolutionName}}" "$(Build.SourcesDirectory)\$(Build.Repository.Name)\src\WebResources"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while upload webresource solution."
         Write-Host $_
         exit 1;
     }
-    displayName: 'Upload Web Resources Javascript'
-    env:
-     MAPPED_SPN_Token: $(SpnToken)
+  displayName: 'Upload Web Resources Javascript'
+  env:
+   MAPPED_SPN_Token: $(SpnToken)

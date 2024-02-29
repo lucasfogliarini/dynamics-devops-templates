@@ -31,11 +31,8 @@ function Get-SolutionWebResourcesJavaScript {
     
     Write-Host "Query: $fetchEncoded"
 
-    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-    $headers.Add("Content-Type", "application/json")
-    $headers.Add("Authorization", "Bearer $token")
-
-    $response = Invoke-RestMethod "$url/api/data/v9.1/webresourceset?fetchXml=$fetchEncoded" -Method 'GET' -Headers $headers
+    $requestUrlRemainder = "webresourceset?fetchXml=$fetchEncoded"
+    $response = Invoke-DataverseHttpGet $token $url $requestUrlRemainder
     $responseJson = $response | ConvertTo-Json
     
     # Write-Host $responseJson
@@ -50,6 +47,11 @@ function Upload-Javascript {
         [string]$solutionName,
         [string]$webResourcePath
     )
+    
+    Write-Host "Org URL: $url"
+    Write-Host "SolutionName: $solutionName"
+
+    Invoke-Expression ". $env:POWERSHELLPATH/dataverse-webapi-functions.ps1"
 
     $webresources = (Get-SolutionWebResourcesJavaScript $url $token $solutionName).value
 
@@ -59,19 +61,17 @@ function Upload-Javascript {
         exit(0)
     }
 
-
-    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-    $headers.Add("Content-Type", "application/json")
-    $headers.Add("Authorization", "Bearer $token")
-
-
     foreach ($resource in $webresources){
         $resourceId = $resource.webresourceid
+        $currentResourceName = $($resource.name)
+        if (!$($resource.name).Contains('.js')) {
+            $currentResourceName = "$($resource.name).js"
+        }
 
-        $localFile = Join-Path -Path $webResourcePath -ChildPath "$($resource.name).js"
+        $localFile = Join-Path -Path $webResourcePath -ChildPath $currentResourceName
         Write-Host "Local File: $localFile - Resource Id: $resourceId"
 
-        # Write-Host (ConvertTo-Json $resource)
+        Write-Host (ConvertTo-Json $resource)
        
         $content = [System.IO.File]::ReadAllBytes($localFile);
         $content64 = [System.Convert]::ToBase64String($content);
@@ -82,7 +82,9 @@ function Upload-Javascript {
             $resource.content = $content64;
             $requestBody = $resource | ConvertTo-Json
 
-            $response = Invoke-RestMethod "$url/api/data/v9.1/webresourceset($resourceId)" -Method Patch -Headers $headers -Body $requestBody
+            $requestUrlRemainder = "webresourceset($resourceId)"
+
+            $response = Invoke-DataverseHttpPost $token $url requestUrlRemainder $requestBody 
             $responseJson = $response | ConvertTo-Json
 
             Write-Host "Javascript atualizado."
