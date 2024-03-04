@@ -92,18 +92,18 @@ steps:
   env:
    MAPPED_SPN_Token: $(SpnToken)
 
-# Check Solution Components
+# Check Hotfix Components
 - powershell: |
     # load PowerShell files into memory
-    . "$env:POWERSHELLPATH/check-solution-component2.ps1"
+    . "$env:POWERSHELLPATH/check-hotfix-components.ps1"
     try {
-        Test-SolutionComponent "$(DevServiceConnectionURL)" "$env:MAPPED_SPN_Token" "${{parameters.SolutionName}}" "$(BaseSolutions)"
+        Test-Hotfix-Components "$(DevServiceConnectionURL)" "$env:MAPPED_SPN_Token" "${{parameters.SolutionName}}"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution components."
         Write-Host $_
         exit 1;
     }
-  displayName: 'Check Solution Components'
+  displayName: 'Check Hotfix Components'
   env:
    MAPPED_SPN_Token: $(SpnToken)
 
