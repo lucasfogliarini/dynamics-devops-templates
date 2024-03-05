@@ -1,3 +1,19 @@
+## [Versão 1.3.0](https://dev.azure.com/kdop/Dynamics%20Core/_git/devops-templates?version=GT1.3) (2024-03-04)
+
+> Adicionadas novas tarefas de checagem adicionadas no pipeline hotfix, para impedir que soluções contendo componentes que não estejam presentes na sua solução padrão sejam distribuídas.
+
+### Upgrade Steps
+- Utilizar o pipeline update-pipelines-templates com opção tag e valor 1.3
+
+### Breaking Changes
+- Pipeline hotfix falha caso algum componente presente na solution não esteja contido na solution base ou algum de seus patches.
+
+### New Features
+- Nova tarefa Check Hotfix que carrega o script check-hotfix-components.ps1 e invoca o método Test-Hotfix-Components "$(DevServiceConnectionURL)" "$env:MAPPED_SPN_Token" "${{parameters.SolutionName}}"
+
+### Bug Fixes
+- N/A
+
 ## [Versão 1.2.0](https://dev.azure.com/kdop/Dynamics%20Core/_git/devops-templates?version=GT1.2) (2024-02-28)
 
 > Adicionadas novas tarefas de checagem adicionadas no pipeline export-solution, para impedir que soluções contendo web resources modificados diretamente no ambiente sejam distribuídas.
