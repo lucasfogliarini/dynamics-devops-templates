@@ -6,10 +6,10 @@
 - Utilizar o pipeline update-pipelines-templates com opção tag e valor 1.3
 
 ### Breaking Changes
-- Pipeline hotfix falha caso algum componente presente na solution não esteja contido na solution base ou algum de seus patches.
+- Pipeline export-hotfix falha caso algum componente presente na solution não esteja contido na solution base ou algum de seus patches.
 
 ### New Features
-- Nova tarefa Check Hotfix que carrega o script check-hotfix-components.ps1 e invoca o método Test-Hotfix-Components $(DevServiceConnectionURL) $env:MAPPED_SPN_Token ${{parameters.SolutionName}}
+- Nova tarefa Check Hotfix que carrega o script check-hotfix-components.ps1 e invoca o método Test-Hotfix-Components para confirmação de presença de cada componente na solution base ou algum de seus patches
 
 ### Bug Fixes
 - N/A
