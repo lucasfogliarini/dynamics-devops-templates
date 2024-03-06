@@ -40,7 +40,7 @@ steps:
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/check-solution-name.ps1"
     try {
-        Test-SolutionName "$env:MAPPED_SPN_Token" "${{parameters.DevServiceConnectionURL}}" "${{parameters.SolutionName}}" "^$(System.TeamProject)_hf_\d+(_\w+)?$"
+        Test-SolutionName "$env:MAPPED_SPN_Token" "${{parameters.DevServiceConnectionURL}}" "${{parameters.SolutionName}}"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution name."
         Write-Host $_
