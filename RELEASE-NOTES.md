@@ -9,7 +9,8 @@
 - Pipeline export-hotfix falha caso algum componente presente na solution não esteja contido na solution base ou algum de seus patches.
 
 ### New Features
-- Nova tarefa Check Hotfix que carrega o script check-hotfix-components.ps1 e invoca o método Test-Hotfix-Components para confirmação de presença de cada componente na solution base ou algum de seus patches
+- Estrutura de implementação de export para Hotfix. export-sample-hotfix.yml e Templates/export-hotfix.yml
+- Tarefa Check Hotfix que carrega o script check-hotfix-components.ps1 e invoca o método Test-Hotfix-Components para confirmação de presença de cada componente na solution base ou algum de seus patches
 
 ### Bug Fixes
 - N/A
