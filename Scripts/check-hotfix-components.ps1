@@ -24,7 +24,7 @@ function Test-Hotfix-Components {
             $componentDetail = Get-SolutionComponentDetails $url $token $component.objectid
 
             if( $null -eq ($componentDetail | Where-Object {$baseSolutionName -contains ($_.basesolutionuniquename, $_.solutionuniquename | Select-Object -First 1) })){
-                Write-Error "Componente ID $($component.solutioncomponentid), OBJECTID $($component.objectid) nao encontrado na solucao base $baseSolutionName. Adicione e tente novamente."
+                Write-Error "Componente:`n`tID = $($component.solutioncomponentid),`n`tTIPO = $($component.componenttype),`n`tOBJECTID = $($component.objectid)`n nao encontrado na solucao base $baseSolutionName. Adicione e tente novamente."
                 exit 1
             }
         }

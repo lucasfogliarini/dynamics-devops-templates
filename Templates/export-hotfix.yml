@@ -1,31 +1,19 @@
 parameters:
- - name: 'SolutionName'
-   displayName: 'Solution Name'
-   type: string
-
-resources:
-  repositories:
-  - repository: PipelineRepo
-    type: git
-    ref: master
-    name: Athenas/devops-templates
-
-trigger: none
-
-appendCommitMessageToRunName: false
-
-name: ${{parameters.SolutionName}}
-
-variables:
-- group: powerplatform-variable-group
+- name: SolutionName
+  type: string
+- name: DevServiceConnectionName
+  type: string
+- name: DevServiceConnectionURL
+  type: string
+- name: PublisherPrefix
+  type: string
+  default: 'kcs'
+- name: ConnectionReferenceDisplayNamePattern
+  type: string
+- name: ConnectionReferenceLogicalNamePattern
+  type: string
 
 steps:
-
-# Checkout Pipelines
-- checkout: git://$(System.TeamProject)/devops-templates@master
-  path: 'PipelineUtils'
-  displayName: 'Checkout Pipeline Branch'
-  persistCredentials: true
 
 - task: PowerPlatformToolInstaller@2
   inputs:
@@ -37,12 +25,12 @@ steps:
   name: connectionVariables
   inputs:
     authenticationType: 'PowerPlatformSPN'
-    PowerPlatformSPN: $(DevServiceConnectionName)
-    Environment: $(DevServiceConnectionURL)
+    PowerPlatformSPN: ${{parameters.DevServiceConnectionName}}
+    Environment: ${{parameters.DevServiceConnectionURL}}
 
-- template: Templates/set-spn-token.yml
+- template: set-spn-token.yml
   parameters:
-    dynamicsUrl: $(DevServiceConnectionURL)
+    dynamicsUrl: ${{parameters.DevServiceConnectionURL}}
     tenantId: $(connectionVariables.BuildTools.TenantId)
     clientId: $(connectionVariables.BuildTools.ApplicationId)
     clientSecret: $(connectionVariables.BuildTools.ClientSecret)
@@ -52,7 +40,7 @@ steps:
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/check-solution-name.ps1"
     try {
-        Test-SolutionName "$env:MAPPED_SPN_Token" "$(DevServiceConnectionURL)" "${{parameters.SolutionName}}" "^$(System.TeamProject)_hf_\d+(_\w+)?$"
+        Test-SolutionName "$env:MAPPED_SPN_Token" "${{parameters.DevServiceConnectionURL}}" "${{parameters.SolutionName}}" "^$(System.TeamProject)_hf_\d+(_\w+)?$"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution name."
         Write-Host $_
@@ -67,7 +55,7 @@ steps:
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/check-publisher-name.ps1"
     try {
-        Test-PublisherPrefix "$env:MAPPED_SPN_Token" "$(DevServiceConnectionURL)" "${{parameters.SolutionName}}" "kcs"
+        Test-PublisherPrefix "$env:MAPPED_SPN_Token" "${{parameters.DevServiceConnectionURL}}" "${{parameters.SolutionName}}" "${{parameters.PublisherPrefix}}"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution publisher."
         Write-Host $_
@@ -82,7 +70,7 @@ steps:
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/check-connection-references.ps1"
     try {
-        Test-ConnectionReferences "$env:MAPPED_SPN_Token" "$(DevServiceConnectionURL)" "${{parameters.SolutionName}}" "$(ConnectionReferenceDisplayNamePattern)" "$(ConnectionReferenceLogicalNamePattern)"
+        Test-ConnectionReferences "$env:MAPPED_SPN_Token" "${{parameters.DevServiceConnectionURL}}" "${{parameters.SolutionName}}" "${{parameters.ConnectionReferenceDisplayNamePattern}}" "${{parameters.ConnectionReferenceLogicalNamePattern}}"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while checking connection references."
         Write-Host $_
@@ -97,7 +85,7 @@ steps:
     # load PowerShell files into memory
     . "$env:POWERSHELLPATH/check-hotfix-components.ps1"
     try {
-        Test-Hotfix-Components "$(DevServiceConnectionURL)" "$env:MAPPED_SPN_Token" "${{parameters.SolutionName}}"
+        Test-Hotfix-Components "${{parameters.DevServiceConnectionURL}}" "$env:MAPPED_SPN_Token" "${{parameters.SolutionName}}"
     } catch {
         Write-Host "##vso[task.logissue type=warning]Error occurred while checking solution components."
         Write-Host $_
@@ -111,15 +99,15 @@ steps:
   displayName: 'Power Platform Publish Customizations '
   inputs:
     authenticationType: PowerPlatformSPN
-    PowerPlatformSPN: $(DevServiceConnectionName)
-    Environment: $(DevServiceConnectionURL)
+    PowerPlatformSPN: ${{parameters.DevServiceConnectionName}}
+    Environment: ${{parameters.DevServiceConnectionURL}}
 
 - task: microsoft-IsvExpTools.PowerPlatform-BuildTools.export-solution.PowerPlatformExportSolution@2
   displayName: 'Power Platform Export Solution '
   inputs:
     authenticationType: PowerPlatformSPN
-    PowerPlatformSPN: $(DevServiceConnectionName)
-    Environment: $(DevServiceConnectionURL)
+    PowerPlatformSPN: ${{parameters.DevServiceConnectionName}}
+    Environment: ${{parameters.DevServiceConnectionURL}}
     SolutionName: "${{parameters.SolutionName}}"
     SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/hotfix.zip'
     Managed: true
