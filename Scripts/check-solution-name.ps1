@@ -4,7 +4,7 @@ function Test-SolutionName {
         [Parameter(Mandatory)] [String]$dataverseHost,
         [Parameter(Mandatory)] [String]$solutionName
     )
-    $prefixName = ($solutionName -split ('_hf'))[0]
+    $prefixName = ($solutionName -split '_hf')[0]
     $pattern = "^$($prefixName)_hf_\d+(_\w+)?$"
  
     Write-Host "solution name: $solutionName"

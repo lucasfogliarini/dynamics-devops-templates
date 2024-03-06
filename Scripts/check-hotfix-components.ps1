@@ -37,7 +37,7 @@ function Get-BaseSolutionName {
     param (
         [Parameter(Mandatory)] [String]$solutionName
     )
-    $prefixName = $solutionName.Split('_hf')[0]
+    $prefixName = ($solutionName -split '_hf' )[0]
  
     Write-Host "Hotfix Solution name: $solutionName"
     Write-Host "Base Solution name: $prefixName"
