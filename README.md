@@ -174,7 +174,7 @@ Esse pipeline é utilizado para empacotar a solução não gerenciada e submeter
 Esse pipeline é utilizado para empacotar a solução como gerenciada e produzir os artefatos que serão utilizados no release.
 > O acionamento desse pipeline ocorre de maneira automática, quando um pull request é aceito e ocorre o merge das branches com sucesso.
 
-### hotfix
+### export-hotfix
 Esse pipeline deve ser utilizado para exportar soluções de hotfix para correções urgentes nos ambientes de HML e PROD, requer que seja passado como parâmetro o nome lógico da solução.
 > A permanência dos hotfixes nos ambientes é temporária, devendo ser excluído cada vez que houver um deploy de sprint que contiver os componentes alterados no hotfix.
 
@@ -195,9 +195,9 @@ Esse pipeline é responsável por subir todos os recursos da web contidos na pas
 
 ### Check Solution Name Pattern
 **Uso**: export-solution  
-**Variável**: CheckSolutionNamePattern  
-**Valor Padrão**: false  
-**Descrição**: Essa tarefa avalia se o nome da solução está dentro de um conjunto de soluções permitidas/aprovadas de acordo com uma expressão regular.
+**Variável**: SolutionName  
+**Valor Padrão**: N/A  
+**Descrição**: Essa tarefa avalia se o nome da solução está conforme o padrão de nomenclatura permitidas/aprovadas de acordo com uma expressão regular.
 
 ### Check Solution Publisher
 **Uso**: export-solution  
