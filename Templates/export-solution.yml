@@ -37,6 +37,7 @@ parameters:
   default: true
 - name: AllowedAuthor
   type: string
+  default: '9C225051-2E38-EC11-8C64-00224837D840'
   
   # Settings
 - name: SolutionName
@@ -57,6 +58,9 @@ parameters:
 - name: PublisherPrefix
   type: string
   default: 'kcs'
+- name: ApprovedSolutionNames
+  type: string
+  default: ''
 
 steps:
 # Init git
@@ -223,6 +227,8 @@ steps:
     }
   displayName: 'Check WebResource Author'
   condition: and(succeeded(), ${{parameters.CheckWebresourceAuthor}})
+  env:
+   MAPPED_SPN_Token: $(SpnToken)
 
 - task: PowerPlatformPublishCustomizations@2
   inputs:
