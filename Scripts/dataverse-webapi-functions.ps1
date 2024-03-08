@@ -89,3 +89,16 @@ function Invoke-DataverseHttpPost {
     $response = Invoke-RestMethod $requestUrl -Method 'POST' -Headers $headers -Body $body
     return $response
 }
+
+function Invoke-DataverseHttpPatch {
+    param (
+        [Parameter(Mandatory)] [String]$token,
+        [Parameter(Mandatory)] [String]$dynamicsURL,
+        [Parameter(Mandatory)] [String]$requestUrlRemainder,
+        [Parameter(Mandatory)] [String]$body
+    )
+    $headers = Set-DefaultHeaders $token
+    $requestUrl = Set-RequestUrl $dynamicsURL $requestUrlRemainder
+    $response = Invoke-RestMethod $requestUrl -Method 'PATCH' -Headers $headers -Body $body
+    return $response
+}
