@@ -84,7 +84,7 @@ function Upload-Javascript {
 
             $requestUrlRemainder = "webresourceset($resourceId)"
 
-            $response = Invoke-DataverseHttpPost $token $url requestUrlRemainder $requestBody 
+            $response = Invoke-DataverseHttpPost $token $url $requestUrlRemainder $requestBody 
             $responseJson = $response | ConvertTo-Json
 
             Write-Host "Javascript atualizado."
