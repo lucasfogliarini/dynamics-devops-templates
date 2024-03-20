@@ -28,8 +28,11 @@ function Test-SolutionName {
         $responseJson = ($response | ConvertTo-Json)
         Write-Host "JSON: $responseJson"
  
-        if($($response.value[0].uniquename)){
-            Write-Host "Sucesso!"
+        if(-not $($response.value[0].uniquename)){
+            Write-Warning "Solution $prefixName nao encontrada em $dataverseHost"
+            exit(1)
         }
+        
+        Write-Host "Sucesso!"
     }
 }
